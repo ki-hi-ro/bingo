@@ -6,7 +6,7 @@ class BingoCard:
         self.marked = [[False] * 5 for _ in range(5)]  # 数字のマーク状態を保持
 
     def generate_card(self):
-        # 各列 (B, I, N, G, O) ごとに範囲内のランダムな数字を選ぶ
+        # 各列 (B, I, , G, O) ごとに範囲内のランダムな数字を選ぶ
         card = []
         ranges = [(1, 15), (16, 30), (31, 45), (46, 60), (61, 75)]
         for start, end in ranges:
