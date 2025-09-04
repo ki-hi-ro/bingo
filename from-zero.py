@@ -1,6 +1,7 @@
 import random
 
 B_RANGES = [(1, 15), (16, 30), (31, 45), (46, 60), (61, 75)]
+CELL_W = 4
 
 def generate_card():
   cols = [random.sample(range(lo, hi + 1), 5) for lo, hi in B_RANGES]
@@ -8,16 +9,24 @@ def generate_card():
   card[2][2] = "FR"
   return card
 
-def print_card(card):
-  print('B  I  N  G  O')
-  for row in card:
-    row_str = ""
-    for v in row:
+def print_card(card, marked=None):
+  header = "".join(f"{ch:^{CELL_W}}" for ch in "BINGO")
+  print(header)
+
+  for r in range(5):
+    cells = []
+    for c in range(5):
+      v = card[r][c]
       if v == "FR":
-        row_str += " FR "
+        s = "FR"
+      elif marked and marked[r][c]:
+        s = f"[{str(v).rjust(2)}]"  
       else:
-        row_str += f"{v:>3} "
-    print(row_str)
+        s = f"{str(v).rjust(2)}"
+
+      cells.append(f"{s:^{CELL_W}}")
+
+    print("".join(cells))
 
 def main():
   card = generate_card()
