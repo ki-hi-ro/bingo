@@ -53,7 +53,9 @@ def count_lines(marked):
 
 def main():
   card = generate_card()
-  print_card(card)
+  marked = new_marked()
+
+  print_card(card, marked)
 
 if __name__ == "__main__":
   main()
