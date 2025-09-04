@@ -13,14 +13,14 @@ class BingoCard:
             column = random.sample(range(start, end + 1), 5)
             card.append(column)
 
-        card[2][2] = "FREE"  # 中央のフリー枠
+        card[2][2] = "◯"  # 中央のフリー枠
         return card
 
     def mark_number(self, number):
         for i in range(5):
             for j in range(5):
                 if self.card[i][j] == number:
-                    self.card[i][j] = "✖️"
+                    self.card[i][j] = "×"
                     self.marked[i][j] = True
 
     def check_bingo(self):

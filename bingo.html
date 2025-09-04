@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vue.js ビンゴ</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --accent:#22c55e; --muted:#94a3b8; --grid:#1f2937; --danger:#ef4444; }
+    body{margin:0;background:linear-gradient(135deg,#0f172a,#0b1023);color:#e5e7eb;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
+    .wrap{max-width:1000px;margin:32px auto;padding:16px;}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .title{font-weight:800;letter-spacing:.06em;font-size:clamp(24px,4vw,40px);}
+    .subtitle{color:var(--muted);font-size:14px}
+    .board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:var(--grid);padding:8px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .cell{aspect-ratio:1/1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:clamp(16px,3.5vw,26px);background:#0b1220;position:relative;overflow:hidden;}
+    .cell span{position:relative;z-index:1}
+    .cell::after{content:"";position:absolute;inset:0;opacity:0;transition:.25s;}
+    .cell.marked{background:rgba(34,197,94,.12);}
+    .cell.marked::after{background:linear-gradient(135deg,rgba(34,197,94,.25),rgba(34,197,94,.05));opacity:1}
+    .cell.free{background:rgba(34,197,94,.18);}
+    .headerRow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px}
+    .hdr{background:#0b1220;border-radius:12px;padding:12px 0;text-align:center;font-weight:800;letter-spacing:.15em}
+    .panel{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .btns{display:flex;flex-wrap:wrap;gap:10px}
+    button{appearance:none;border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;color:#0b1220;background:#d1fae5;transition:.2s}
+    button:hover{transform:translateY(-1px)}
+    .danger{background:#fecaca}
+    .ghost{background:#e5e7eb}
+    .lastNum{font-size:40px;font-weight:900;color:#bbf7d0}
+    .list{display:flex;flex-wrap:wrap;gap:6px;max-height:170px;overflow:auto}
+    .chip{padding:6px 10px;border-radius:999px;background:#0b1220;color:#93c5fd;border:1px solid #1f2937;font-weight:700}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+    .stat{background:#0b1220;border-radius:12px;padding:10px;text-align:center}
+    .footer{margin-top:22px;color:var(--muted);font-size:12px}
+    .sr{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+  </style>
+</head>
+<body>
+  <div id="app" class="wrap">
+    <div class="header">
+      <div>
+        <div class="title">B I N G O</div>
+        <div class="subtitle">Vue 3（CDN）版・クリックなしで遊べる抽選型</div>
+      </div>
+      <div class="btns">
+        <button @click="drawNumber" :disabled="gameOver">番号を引く</button>
+        <button class="ghost" @click="toggleAuto">{{ auto ? '自動停止' : '自動で引く' }}</button>
+        <button class="danger" @click="reset">リセット</button>
+      </div>
+    </div>
+
+    <!-- ヘッダ "B I N G O" -->
+    <div class="headerRow">
+      <div class="hdr">B</div>
+      <div class="hdr">I</div>
+      <div class="hdr">N</div>
+      <div class="hdr">G</div>
+      <div class="hdr">O</div>
+    </div>
+
+    <!-- ボード -->
+    <div class="board" role="grid" aria-label="BINGO board">
+      <div v-for="(cell, idx) in flatBoard" :key="idx"
+           class="cell" :class="{ marked: cell.marked, free: cell.free }" role="gridcell"
+           :aria-label="cell.label">
+        <span>{{ cell.display }}</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="subtitle">直近の番号</div>
+        <div class="lastNum" aria-live="polite">{{ lastNumber ?? '—' }}</div>
+        <div class="stats">
+          <div class="stat"><div class="subtitle">引いた数</div><div style="font-weight:800;font-size:20px">{{ drawn.size }}</div></div>
+          <div class="stat"><div class="subtitle">ビンゴ数</div><div style="font-weight:800;font-size:20px">{{ bingoCount }}</div></div>
+          <div class="stat"><div class="subtitle">状態</div><div style="font-weight:800;font-size:20px">{{ gameOver? 'BINGO!': '進行中' }}</div></div>
+        </div>
+        <div class="footer">中央はフリー（◯）。引いた番号に一致すると自動で × でマークされます。</div>
+      </div>
+      <div class="card">
+        <div class="subtitle" style="margin-bottom:8px">出た番号一覧</div>
+        <div class="list">
+          <span v-for="n in sortedDrawn" :key="n" class="chip">{{ n }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const { createApp, reactive, computed, onMounted, onBeforeUnmount } = Vue
+
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]]
+    }
+    return arr
+  }
+
+  function generateBoard(){
+    // 列ごとにレンジを作成 (B:1-15, I:16-30, N:31-45, G:46-60, O:61-75)
+    const ranges = [ [1,15], [16,30], [31,45], [46,60], [61,75] ]
+    const cols = ranges.map(([s,e])=>{
+      const pool = Array.from({length:e-s+1}, (_,k)=>s+k)
+      shuffle(pool)
+      return pool.slice(0,5)
+    })
+    // 5x5 の [row][col] に変換（表示は列ごとだったPython実装を行/列表示に整形）
+    const grid = Array.from({length:5},(_,r)=>Array.from({length:5},(_,c)=>cols[c][r]))
+    // 中央フリー
+    grid[2][2] = '◯'
+    return grid
+  }
+
+  createApp({
+    setup(){
+      const state = reactive({
+        grid: generateBoard(),          // 値（数値 or '◯'）
+        marked: Array.from({length:5},()=>Array(5).fill(false)),
+        drawn: new Set(),
+        lastNumber: null,
+        auto: false,
+        timer: null,
+      })
+
+      // 中央をあらかじめマーク
+      state.marked[2][2] = true
+
+      const flatBoard = computed(()=>{
+        return state.grid.flatMap((row,r)=> row.map((val,c)=>({
+          display: typeof val === 'number' ? String(val) : val,
+          marked: state.marked[r][c],
+          free: r===2 && c===2,
+          label: `r${r+1} c${c+1} ${typeof val==='number'?val:'free'}`
+        })))
+      })
+
+      const lastNumber = computed(()=> state.lastNumber)
+      const sortedDrawn = computed(()=> Array.from(state.drawn).sort((a,b)=>a-b))
+
+      function markIfMatch(num){
+        for(let r=0;r<5;r++){
+          for(let c=0;c<5;c++){
+            if(state.grid[r][c]===num){ state.marked[r][c]=true }
+          }
+        }
+      }
+
+      function drawNumber(){
+        if(state.drawn.size>=75) return
+        let n = Math.floor(Math.random()*75)+1
+        while(state.drawn.has(n)) n = Math.floor(Math.random()*75)+1
+        state.drawn.add(n)
+        state.lastNumber = n
+        markIfMatch(n)
+      }
+
+      function checkBingoLines(){
+        let count = 0
+        // rows
+        for(let r=0;r<5;r++) if(state.marked[r].every(Boolean)) count++
+        // cols
+        for(let c=0;c<5;c++){
+          let ok=true
+          for(let r=0;r<5;r++) if(!state.marked[r][c]){ ok=false; break }
+          if(ok) count++
+        }
+        // diagonals
+        if([0,1,2,3,4].every(i=>state.marked[i][i])) count++
+        if([0,1,2,3,4].every(i=>state.marked[i][4-i])) count++
+        return count
+      }
+
+      const bingoCount = computed(()=> checkBingoLines())
+      const gameOver = computed(()=> bingoCount.value>0)
+
+      function reset(){
+        state.grid = generateBoard()
+        state.marked = Array.from({length:5},()=>Array(5).fill(false))
+        state.marked[2][2]=true
+        state.drawn = new Set()
+        state.lastNumber = null
+        stopAuto()
+      }
+
+      function tick(){
+        if(!gameOver.value) drawNumber(); else stopAuto()
+      }
+
+      function startAuto(){
+        if(state.timer) return
+        state.timer = setInterval(tick, 1000)
+        state.auto = true
+      }
+      function stopAuto(){
+        if(state.timer){ clearInterval(state.timer); state.timer=null }
+        state.auto = false
+      }
+      function toggleAuto(){ state.auto ? stopAuto() : startAuto() }
+
+      onBeforeUnmount(()=> stopAuto())
+
+      return { flatBoard, drawNumber, reset, lastNumber, drawn: state.drawn, sortedDrawn, bingoCount, gameOver, auto: state.auto, toggleAuto }
+    }
+  }).mount('#app')
+  </script>
+</body>
+</html>
