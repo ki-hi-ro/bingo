@@ -28,6 +28,11 @@ def print_card(card, marked=None):
 
     print("".join(cells))
 
+def new_marked():
+  m = [[False]*5 for _ in range(5)]
+  m[2][2] = True # FREEは最初からマーク
+  return m
+
 def main():
   card = generate_card()
   print_card(card)
