@@ -33,6 +33,14 @@ def new_marked():
   m[2][2] = True # FREEは最初からマーク
   return m
 
+def mark_number(card, marked, n):
+  for r in range(5):
+    for c in range(5):
+      if card[r][c] == n:
+        marked[r][c] = True
+        return True
+  return False
+
 def main():
   card = generate_card()
   print_card(card)
