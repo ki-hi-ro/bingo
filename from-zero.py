@@ -18,7 +18,7 @@ def print_card(card, marked=None):
     for c in range(5):
       v = card[r][c]
       if v == "FR":
-        s = "FR"
+        s = "[FR]"
       elif marked and marked[r][c]:
         s = f"[{str(v).rjust(2)}]"  
       else:
