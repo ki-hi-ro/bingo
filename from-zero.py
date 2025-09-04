@@ -41,6 +41,16 @@ def mark_number(card, marked, n):
         return True
   return False
 
+def count_lines(marked):
+  lines = 0
+  for r in range(5):
+    if all(marked[r][c] for c in range(5)): lines += 1
+  for c in range(5):
+    if all(marked[r][c] for r in range(5)): lines += 1  
+  if all(marked[i][i] for i in range(5)): lines += 1
+  if all(marked[i][4-i] for i in range(5)): lines += 1  
+  return lines
+
 def main():
   card = generate_card()
   print_card(card)
