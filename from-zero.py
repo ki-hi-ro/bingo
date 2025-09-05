@@ -57,5 +57,14 @@ def main():
 
   print_card(card, marked)
 
+  pool = list(range(1, 76))
+  random.shuffle(pool)
+  n = pool.pop()
+  mark_number(card, marked, n)
+  lines = count_lines(marked)
+
+  print(f"\nCalled: {n}  Remaining: {len(pool)}  Lines: {lines}")
+  print_card(card, marked)
+
 if __name__ == "__main__":
   main()
