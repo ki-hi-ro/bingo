@@ -54,17 +54,45 @@ def count_lines(marked):
 def main():
   card = generate_card()
   marked = new_marked()
-
-  print_card(card, marked)
-
   pool = list(range(1, 76))
   random.shuffle(pool)
-  n = pool.pop()
-  mark_number(card, marked, n)
-  lines = count_lines(marked)
+  history = []
+  turn = 0
 
-  print(f"\nCalled: {n}  Remaining: {len(pool)}  Lines: {lines}")
   print_card(card, marked)
+  print("Enter=next  h=history  q=quit") 
+  
+  while True:
+    cmd = input("> ").strip().lower()
+    
+    if cmd == "q":
+      print("Bye!")
+      break
+    if cmd == "h":
+      print(f"Called: {', '.join(map(str, history)) or '(none)'}")
+      continue
+    # Enter(空文字)以外は無視して続行
+    if cmd not in ("",):
+      continue
+
+    if not pool:
+      print("No numbers left. Draw game.")
+      break
+
+    # ここから1ターン進行
+    n  = pool.pop()
+    history.append(n)
+    turn += 1
+
+    mark_number(card, marked, n)
+    lines = count_lines(marked)
+
+    print(f"\nTurn {turn}  Called: {n}  Remaining: {len(pool)}  Lines: {lines}")
+    print_card(card, marked)
+
+    if lines >= 1:
+      print("\nBINGO! congrats!")
+      break
 
 if __name__ == "__main__":
   main()
