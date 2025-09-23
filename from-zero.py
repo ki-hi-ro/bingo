@@ -1,4 +1,5 @@
 import random
+import logging
 
 B_RANGES = [(1, 15), (16, 30), (31, 45), (46, 60), (61, 75)]
 CELL_W = 4
@@ -52,6 +53,11 @@ def count_lines(marked):
   return lines
 
 def main():
+  logging.basicConfig(
+    filename="bingo.log",
+    level=logging.INFO, 
+    format="%(levelname)s:%(message)s")
+  logging.info("ビンゴゲームを開始します。")
   card = generate_card()
   marked = new_marked()
   pool = list(range(1, 76))
