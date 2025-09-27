@@ -56,7 +56,8 @@ def main():
   logging.basicConfig(
     filename="bingo.log",
     level=logging.INFO, 
-    format="%(levelname)s:%(message)s")
+    format="%(asctime)s %(levelname)s:%(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S")
   logging.info("ビンゴゲームを開始します。")
   card = generate_card()
   marked = new_marked()
