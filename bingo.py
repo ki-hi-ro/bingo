@@ -1,74 +1,105 @@
 import random
+import logging
 
-class BingoCard:
-    def __init__(self):
-        self.card = self.generate_card()
-        self.marked = [[False] * 5 for _ in range(5)]  # 数字のマーク状態を保持
+B_RANGES = [(1, 15), (16, 30), (31, 45), (46, 60), (61, 75)]
+CELL_W = 4
 
-    def generate_card(self):
-        # 各列 (B, I, N, G, O) ごとに範囲内のランダムな数字を選ぶ
-        card = []
-        ranges = [(1, 15), (16, 30), (31, 45), (46, 60), (61, 75)]
-        for start, end in ranges:
-            column = random.sample(range(start, end + 1), 5)
-            card.append(column)
+def generate_card():
+  cols = [random.sample(range(lo, hi + 1), 5) for lo, hi in B_RANGES]
+  card = [[cols[c][r] for c in range(5)] for r in range(5)]
+  card[2][2] = "FR"
+  return card
 
-        card[2][2] = "◯"  # 中央のフリー枠
-        return card
+def print_card(card, marked=None):
+  header = "".join(f"{ch:^{CELL_W}}" for ch in "BINGO")
+  print(header)
 
-    def mark_number(self, number):
-        for i in range(5):
-            for j in range(5):
-                if self.card[i][j] == number:
-                    self.card[i][j] = "×"
-                    self.marked[i][j] = True
+  for r in range(5):
+    cells = []
+    for c in range(5):
+      v = card[r][c]
+      if v == "FR":
+        s = "[FR]"
+      elif marked and marked[r][c]:
+        s = f"[{str(v).rjust(2)}]"  
+      else:
+        s = f"{str(v).rjust(2)}"
 
-    def check_bingo(self):
-        # 行と列でビンゴかどうかをチェック
-        for i in range(5):
-            if all(self.marked[i]):  # 行のビンゴ
-                return True
-            if all([self.marked[j][i] for j in range(5)]):  # 列のビンゴ
-                return True
+      cells.append(f"{s:^{CELL_W}}")
 
-        # 対角線のビンゴをチェック
-        if all([self.marked[i][i] for i in range(5)]):  # 左上から右下
-            return True
-        if all([self.marked[i][4 - i] for i in range(5)]):  # 右上から左下
-            return True
+    print("".join(cells))
 
-        return False
+def new_marked():
+  m = [[False]*5 for _ in range(5)]
+  m[2][2] = True # FREEは最初からマーク
+  return m
 
-    def display_card(self):
-        print("\nB  I  N  G  O")
-        for i in range(5):
-            for j in range(5):
-                value = self.card[j][i]  # 列ごとに表示
-                if isinstance(value, int):
-                    print(f"{value:2d}", end=" ")
-                else:
-                    print(f"{value:>2}", end=" ")
-            print()
+def mark_number(card, marked, n):
+  for r in range(5):
+    for c in range(5):
+      if card[r][c] == n:
+        marked[r][c] = True
+        return True
+  return False
 
-def play_bingo():
-    card = BingoCard()
-    card.display_card()
+def count_lines(marked):
+  lines = 0
+  for r in range(5):
+    if all(marked[r][c] for c in range(5)): lines += 1
+  for c in range(5):
+    if all(marked[r][c] for r in range(5)): lines += 1  
+  if all(marked[i][i] for i in range(5)): lines += 1
+  if all(marked[i][4-i] for i in range(5)): lines += 1  
+  return lines
 
-    drawn_numbers = set()
-    while True:
-        input("Enterで次の番号を引きます...")
-        number = random.randint(1, 75)
-        while number in drawn_numbers:  # 重複しないようにする
-            number = random.randint(1, 75)
-        drawn_numbers.add(number)
+def main():
+  logging.basicConfig(
+    filename="bingo.log",
+    level=logging.INFO, 
+    format="%(asctime)s %(levelname)s:%(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S")
+  logging.info("ビンゴゲームを開始します。")
+  card = generate_card()
+  marked = new_marked()
+  pool = list(range(1, 76))
+  random.shuffle(pool)
+  history = []
+  turn = 0
 
-        print(f"引かれた番号: {number}")
-        card.mark_number(number)
-        card.display_card()
+  print_card(card, marked)
+  print("Enter=next  h=history  q=quit") 
+  
+  while True:
+    cmd = input("> ").strip().lower()
+    
+    if cmd == "q":
+      print("Bye!")
+      break
+    if cmd == "h":
+      print(f"Called: {', '.join(map(str, history)) or '(none)'}")
+      continue
+    # Enter(空文字)以外は無視して続行
+    if cmd not in ("",):
+      continue
 
-        if card.check_bingo():
-            print("ビンゴ！おめでとうございます！")
-            break
+    if not pool:
+      print("No numbers left. Draw game.")
+      break
 
-# ゲームを開始
-play_bingo()
+    # ここから1ターン進行
+    n  = pool.pop()
+    history.append(n)
+    turn += 1
+
+    mark_number(card, marked, n)
+    lines = count_lines(marked)
+
+    print(f"\nTurn {turn}  Called: {n}  Remaining: {len(pool)}  Lines: {lines}")
+    print_card(card, marked)
+
+    if lines >= 1:
+      print("\nBINGO! congrats!")
+      break
+
+if __name__ == "__main__":
+  main()
