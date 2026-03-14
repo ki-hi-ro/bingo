@@ -67,27 +67,47 @@ def main():
   turn = 0
 
   print_card(card, marked)
-  print("Enter=next  h=history  q=quit") 
-  
+  print("Enter=next  h=history  q=quit")
+
   while True:
-    cmd = input("> ").strip().lower()
-    
-    if cmd == "q":
+    # Ctrl + D、または、Ctrl + Cで、例外を発生させる
+    # cmd = input("> ").strip().lower()
+
+    # 入力まわりの例外をキャッチ
+    # try:
+    #   cmd = input("> ").strip().lower()
+    # except (EOFError, KeyboardInterrupt):
+    #   print("\nBye!")
+    #   break
+
+    try:
+        cmd = input("> ").strip().lower()
+    except KeyboardInterrupt as e:
+        print(type(e))   # 例外の型
+        print(e)         # 例外メッセージ
+
+    # コマンド分岐（進行しない分岐は必ず continue）
+    if cmd in ("q", "quit", "exit"):
       print("Bye!")
       break
-    if cmd == "h":
+
+    elif cmd in ("h", "history"):
       print(f"Called: {', '.join(map(str, history)) or '(none)'}")
       continue
-    # Enter(空文字)以外は無視して続行
-    if cmd not in ("",):
+
+    elif cmd in ("", "n", "next"):
+      # Enter（または n/next）のときだけ1ターン進行
+      print("1ターン進行します。")
+    else:
+      print(f"無効なコマンドです: {cmd!r}  (Enter / h / q を使用)")
       continue
 
+    # ここから1ターン進行（有効な進行コマンドのときだけ実行）
     if not pool:
       print("No numbers left. Draw game.")
       break
 
-    # ここから1ターン進行
-    n  = pool.pop()
+    n = pool.pop()
     history.append(n)
     turn += 1
 
