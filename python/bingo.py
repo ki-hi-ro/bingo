@@ -54,7 +54,7 @@ def count_lines(marked):
 
 def main():
   logging.basicConfig(
-    filename="bingo.log",
+    filename="python/bingo.log",
     level=logging.INFO, 
     format="%(asctime)s %(levelname)s:%(message)s",
     datefmt="%Y-%m-%d %H:%M:%S")
